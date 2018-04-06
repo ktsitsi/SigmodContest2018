@@ -15,10 +15,11 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	JobScheduler js(12);
+	JobScheduler js(8);
 
 	Granma::Joiner joiner;
 	// Read join relations
+
 	string line;
 	while (getline(cin, line)) {
 		if (line == "Done") break;
@@ -28,7 +29,10 @@ int main(int argc, char *argv[]) {
 	// Build histograms, indexes,...
 
     //double start = ((double)clock()) / CLOCKS_PER_SEC;
+	std::cerr<<"Mpika mesa"<<std::endl;
 	joiner.catalog_init();
+
+	joiner.print_catalog();
 	for(uint64_t rel = 0 ; rel < joiner.relations.size(); rel++){
 	 	for(uint64_t colId = 0; colId < joiner.relations[rel]->num_cols(); colId++){
 			StatisticJob* sj = joiner.stat(joiner.relations[rel],colId);
@@ -39,13 +43,17 @@ int main(int argc, char *argv[]) {
 	js.execute_all_jobs();
 	js.wait_all_tasks_finish();
 
+	joiner.print_catalog();
+
+
     //double end = ((double)clock()) / CLOCKS_PER_SEC;
 	QueryInfo i, j;
-	
+	std::cerr<<"YPologisa ta values"<<std::endl;
 	int offset = 0;
 	std::vector<uint64_t>* results = new std::vector<uint64_t>[100];
 
 	while (getline(cin, line)) {
+		std::cerr<<"MALAKAS\n";
 		if (line == "F") {
 			js.execute_all_jobs();
 			js.wait_all_tasks_finish();

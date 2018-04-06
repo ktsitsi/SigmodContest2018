@@ -7,6 +7,7 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <cmath>
 #include "include/joiner.h"
 #include "include/parser.h"
 
@@ -29,6 +30,15 @@ void Joiner::catalog_init(){
 	 	Catalog[rel] = new uint64_t[2+3*relations[rel]->num_cols()];
 	 	Catalog[rel][0] = relations[rel]->num_rows();
 	 	Catalog[rel][1] = relations[rel]->num_cols();
+	}
+}
+
+void Joiner::print_catalog(){
+	for(uint64_t rel = 0 ; rel < relations.size(); rel++){
+		for(uint64_t col = 0; col < 2+3*relations[rel]->num_cols(); col++){
+			std::cerr << Catalog[rel][col] <<" ";
+		}
+		std::cerr<<"\n";
 	}
 }
 
@@ -518,7 +528,7 @@ void Joiner::valid_on_left(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,s
 			}
 			else{
 				return_value.cost_ = 2*(2*cache[left_set].cost_ + 2*cache[rest_set].cost_) + 2*cache[rest_set].cost_ + (cache[left_set].cost_/PARTITIONS)*(cache[rest_set].cost_/(PARTITIONS*HTSIZE)) + (cache[left_set].result_size_ * cache[rest_set].result_size_)/ std::max(cache[left_set].dvalues_,cache[rest_set].dvalues_);
-				return_value.result_size_ = (cache[left_set].result_size_ + cache[rest_set].result_size_)/10;
+				return_value.result_size_ = (cache[left_set].result_size_ + cache[rest_set].result_size_)/std::max(cache[left_set].dvalues_,cache[rest_set].dvalues_);
 				return_value.cached_joins_ = cache[S1].cached_joins_;
 				return_value.cached_joins_.insert(return_value.cached_joins_.begin(), ss);
 				first_occur = true;
@@ -544,7 +554,7 @@ void Joiner::valid_on_right(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,
 				}
 				else{
 					return_value.cost_ = 2*(2*cache[S1].cost_ + 2*cache[set_ss].cost_) + 2*cache[set_ss].cost_+ (cache[S1].cost_/PARTITIONS)*(cache[set_ss].cost_/(PARTITIONS*HTSIZE)) + (cache[S1].result_size_*cache[set_ss].result_size_)/ std::max(cache[S1].dvalues_,cache[set_ss].dvalues_);
-					return_value.result_size_ = (cache[S1].result_size_+cache[set_ss].result_size_)/10;
+					return_value.result_size_ = (cache[S1].result_size_+cache[set_ss].result_size_)/std::max(cache[S1].dvalues_,cache[set_ss].dvalues_);
 					return_value.cached_joins_ = cache[S1].cached_joins_;
 					return_value.cached_joins_.push_back(ss);
 					first_occur = true;
