@@ -31,6 +31,7 @@ public:
 	std::vector<const Relation*> relations;
 	void add_relation(const char* filename);
 	void catalog_init();
+	void print_catalog();
 	StatisticJob* stat(const Relation* rel, uint64_t col);
 	void valid_on_left(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info& return_value);
 	void valid_on_right(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info& return_value);
