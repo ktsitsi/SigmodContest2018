@@ -15,7 +15,7 @@ void* worker(void* arg)
 
     //printf ("%d\n", pkg->id);
     cpu_set_t *cpusetp;
-    size_t num_cpus = 48;
+    size_t num_cpus = 40;
 
     cpusetp = CPU_ALLOC(num_cpus);
     if (cpusetp == NULL)

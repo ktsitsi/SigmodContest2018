@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <stdint.h>
 
+#define SAMPLE 1300
 // Abstract job with functionality to be implemented by a specific
 // type of job as a subclass
 class Job
@@ -56,9 +57,9 @@ class StatisticJob : public Job
 		void RunTask(unsigned int thread_id, unsigned int job_num) {
 
 			uint64_t *ptr = reinterpret_cast<uint64_t *>(rel->get_map_addr());
-	
+			uint64_t sampling_factor = *ptr / SAMPLE;
 			++ptr;
-			 ++ptr;
+			++ptr;
 			// //Go to the first column
 			std::unordered_set<uint64_t> dist_values_set;
 			uint64_t max;
@@ -71,7 +72,9 @@ class StatisticJob : public Job
 			for(unsigned j=0; j<rel->num_rows(); j++){
 				//Insert in the set the values of the column
 				//By default the set insert doesnt add duplicates
-				dist_values_set.insert(*ptr);
+				if(j%sampling_factor == 0){
+					dist_values_set.insert(*ptr);
+				}
 				if(*ptr < min)
 					min = *ptr;
 				if(*ptr > max)
@@ -79,7 +82,7 @@ class StatisticJob : public Job
 			 	++ptr;
 			}
 			// //The number of the distinct values is the size of the set
-			(*catalog_arr)[rel->relation_id()][2+(col*3)+0] = dist_values_set.size();
+			(*catalog_arr)[rel->relation_id()][2+(col*3)+0] = dist_values_set.size()*sampling_factor;
 			(*catalog_arr)[rel->relation_id()][2+(col*3)+1] = min;
 			(*catalog_arr)[rel->relation_id()][2+(col*3)+2] = max;
 			//Clear the set to prepare it for the next columN 
