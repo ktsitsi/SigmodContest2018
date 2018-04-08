@@ -10,7 +10,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	JobScheduler js(28);
+	JobScheduler js(30);
 	Granma::Joiner joiner;
 	// Read join relations
 
