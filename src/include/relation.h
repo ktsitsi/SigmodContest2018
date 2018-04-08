@@ -25,7 +25,7 @@ class Relation {
     const std::vector<uint64_t *> &cols() const { return this->cols_; }
     uint64_t num_rows() const { return this->num_rows_; }
     uint64_t num_cols() const { return this->num_cols_; }
-    void attribute_stats(std::vector<uint64_t>* attr_vector) const;
+    //void attribute_stats(std::vector<uint64_t>* attr_vector) const;
     char* get_map_addr()const{return this->map_addr_;}
 
   private:

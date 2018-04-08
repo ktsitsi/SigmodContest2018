@@ -263,6 +263,7 @@ int main(int argc, char *argv[]) {
                 }
                 output.append(buffer, bytes);
             }
+            //std::cout<<"TEST2"<<std::endl;
 
             // Feed another chunk of data from this batch to the test program
             if (FD_ISSET(stdin_pipe[1], &write_fd)) {
@@ -277,7 +278,7 @@ int main(int argc, char *argv[]) {
                 }
                 input_ofs += bytes;
             }
-
+            
         }
 
         // Parse and compare the batch result

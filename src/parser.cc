@@ -258,7 +258,6 @@ string QueryInfo::dumpSQL()
 QueryInfo::QueryInfo(string rawQuery) { parseQuery(rawQuery); }
 //---------------------------------------------------------------------------
 
-
 void QueryInfo::rewriteQuery(QueryInfo& source) {
     relationIds = source.relationIds;
     /// The predicates

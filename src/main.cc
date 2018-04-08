@@ -4,19 +4,13 @@
 #include <ctime>
 #include "include/parser.h"
 #include "include/joiner.h"
-#include "include/concurrency.h"
 #include "include/scheduler.h"
-
-// logging
-// #include <plog/Log.h>
-// #include <plog/Appenders/ConsoleAppender.h>
 
 using namespace std;
 
 int main(int argc, char *argv[]) {
 
-	JobScheduler js(8);
-
+	JobScheduler js(28);
 	Granma::Joiner joiner;
 	// Read join relations
 
@@ -43,40 +37,17 @@ int main(int argc, char *argv[]) {
 	js.execute_all_jobs();
 	js.wait_all_tasks_finish();
 
-	//joiner.print_catalog();
 
-
-    //double end = ((double)clock()) / CLOCKS_PER_SEC;
-	QueryInfo i, j;
-	//std::cerr<<"YPologisa ta values"<<std::endl;
-	int offset = 0;
-	std::vector<uint64_t>* results = new std::vector<uint64_t>[100];
-
+	QueryInfo i,j;
+	int x = 0;
+	
 	while (getline(cin, line)) {
-		if (line == "F") {
-			js.execute_all_jobs();
-			js.wait_all_tasks_finish();
-			for (int i = 0; i < offset; i++) {
-				for (int j = 0; j < results[i].size(); j++) {
-					if (results[i][j])
-						std::cout << results[i][j];
-					else
-						std::cout << "NULL";
-					if (j != results[i].size()-1)
-						std::cout << " ";
-				}
-				std::cout << "\n";
-			}
-			offset = 0;
-			continue;
-		} // End of a batch
-
+		if (line == "F") continue; // End of a batch
 		i.parseQuery(line);
 		j.rewriteQuery(i);
-		QueryJob* qj = joiner.join(std::move(joiner.optimizing(j)), offset, results);
-
-		js.submit_job(qj);
-		offset++;
+		//std::cerr<<"Query Start"<<x++<<std::endl;
+		std::cout << joiner.join(std::move(joiner.optimizing(j)));
 	}
+
 	return 0;
 }

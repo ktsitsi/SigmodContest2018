@@ -97,7 +97,6 @@ class QueryInfo {
    std::vector<SelectInfo> selections;
    /// Reset query info
    std::vector<uint64_t> results;
-   
    void clear();
 
    private:
@@ -107,7 +106,6 @@ class QueryInfo {
    void resolveRelationIds();
 
    public:
-
    void rewriteQuery(QueryInfo& source) ;
    /// Parse relation ids <r1> <r2> ...
    void parseRelationIds(std::string& rawRelations);

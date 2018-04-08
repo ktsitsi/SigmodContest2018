@@ -1,5 +1,4 @@
 #pragma once
-#include <sstream>
 #include <vector>
 #include <cstdint>
 #include <set>
@@ -32,26 +31,20 @@ class Joiner{
 private:
 	Operator* add_scan(std::set<unsigned>& used_relations, SelectInfo& sinfo, QueryInfo& qinfo);
 	uint64_t **Catalog;
-	std::map<std::set<unsigned>,set_info> cache;
-	std::stringstream result_;
+	std::map<std::set<unsigned>,class set_info> cache;
 public:
-	
 	std::vector<const Relation*> relations;
 	void add_relation(const char* filename);
 	void catalog_init();
-	void print_catalog();
+	void statistics();
 	StatisticJob* stat(const Relation* rel, uint64_t col);
 	void valid_on_left(unsigned ss,std::set<unsigned>* S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info* return_value);
 	void valid_on_right(unsigned ss,std::set<unsigned>* S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info* return_value);
-	// void valid_on_left(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info& return_value);
-	// void valid_on_right(unsigned ss,std::set<unsigned>& S1,QueryInfo& qinfo,std::map<std::set<unsigned>,set_info>& cache,set_info& return_value);
 	QueryInfo optimizing(QueryInfo& qinfo);
 	void query_check(unsigned k, unsigned test_elem, std::set<unsigned>& S1, std::set<unsigned>& S, std::vector<PredicateInfo>& predicates, std::map<std::set<unsigned>,set_info>& cache);
 	QueryInfo inner_optimizer(std::set<unsigned>& S, QueryInfo& qinfo);
-	QueryJob* join(QueryInfo&& qinfo, int wr_offset, std::vector<uint64_t>* result_buffer);
-
-	std::string result() const { return this->result_.str(); }
-    void reset() { this->result_.str(std::string()); }
+	//QueryJob* join(QueryInfo&& qinfo, int wr_offset, std::vector<uint64_t>* result_buffer);
+	std::string join(QueryInfo&& qinfo);
 };
 
 }// namespace Granma

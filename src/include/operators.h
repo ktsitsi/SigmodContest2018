@@ -12,6 +12,24 @@
 
 namespace Granma {
 
+using RelColMapping = std::map<std::pair<unsigned, unsigned>, unsigned>;
+using RelColList = std::vector<std::pair<unsigned, unsigned>>;
+
+// info for materialization
+struct MaterInfo {
+    MaterInfo(const std::vector<const Relation *> &rels,
+              std::vector<unsigned> &rel_join_list, bool with_row_ids = true)
+            : rels_(rels), rel_join_list_(rel_join_list),
+              with_row_ids_(with_row_ids) {}
+
+    const std::vector<const Relation *> &rels_;
+    std::vector<unsigned> &rel_join_list_;
+    RelColList rclist_;
+    std::pair<unsigned, unsigned> boi_; // binding of interest
+    // extra binding of interest for SelfJoin
+    std::pair<unsigned, unsigned> boi_x{-1, -1};
+    bool with_row_ids_;
+};
 
 // operator interface
 class Operator {
@@ -31,18 +49,17 @@ class Operator {
     // the maximum number of rows a call to Next() can return
     virtual unsigned max_rows() const = 0;
 
-    std::vector<std::pair<unsigned, unsigned> >& GetBindings() {
-        return bindings;
-    }
+    RelColList &GetBindings() { return bindings; }
+
 
     virtual Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings) = 0;
-
+    virtual Operator *LateMaterialize(MaterInfo &&info) = 0;
     virtual void Print () = 0;
 
     static const unsigned ROWS_AT_A_TIME;
 
   protected:
-    std::vector<std::pair<unsigned, unsigned> > bindings;
+    RelColList bindings;
 
   private:
 
@@ -63,7 +80,8 @@ class Scan : public Operator {
     unsigned max_rows() const override { return Operator::ROWS_AT_A_TIME; }
     unsigned num_cols() const override { return this->num_cols_; }
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
 
     void Print ();
 
@@ -99,14 +117,16 @@ class Projection : public Operator {
     unsigned num_cols() const override { return this->selected_.size(); }
     unsigned max_rows() const override { return this->child_->max_rows(); }
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
+
 
   protected:
     Operator *child_;
 
   private:
     // selected columns
-
+    unsigned calls_ = 0u;
     const std::vector<unsigned> selected_;
 };
 
@@ -123,9 +143,9 @@ class ProjectionWithRowIds : public Projection {
 
     unsigned num_cols() const override { return Projection::num_cols() + 1; }
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings) {
-        return this;
-    }
+    Operator *ProjectionPass(RelColMapping) override { return this; }
+    Operator *LateMaterialize(MaterInfo &&) override { return this; }
+
 
   private:
     
@@ -137,36 +157,47 @@ class ProjectionWithRowIds : public Projection {
     uint64_t *idx_array_;
 };
 
-// materializer operator
-class Materializer : public Scan {
+// materialization operator
+class Materialization : public Operator {
   public:
-    Materializer(uint64_t *, uint64_t, const Relation &);
-    Materializer(uint64_t *, uint64_t, const Relation &,
-                 const uint64_t *, uint64_t n);
-    virtual ~Materializer() = default;
-
-    int Open() override;
-    int Next(std::vector<uint64_t*> *) override;
-    int Close() override;
-
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings) {
-        return this;
+    Materialization(Operator *, RelColList &, std::vector<unsigned> &,
+                    const std::vector<const Relation *> &, bool);
+    virtual ~Materialization() {
+        std::cerr << "DESTROYING A MATERIALIZATION" << std::endl;
     }
 
-    unsigned num_cols() const override { return Scan::num_cols() + 1; }
+    int Open() override;
+    int Next(std::vector<uint64_t *> *) override;
+    int Close() override;
+    void Print() override;
+
+    Operator *ProjectionPass(RelColMapping) override { return this; }
+    Operator *LateMaterialize(MaterInfo &&) override { return this; }
+
+    unsigned num_cols() const override { return this->num_cols_; }
+    unsigned max_rows() const override { return Operator::ROWS_AT_A_TIME; }
 
   private:
-    // row IDs to materialize
-    uint64_t *row_ids_;
-    // number of row IDs to materialize
-    const uint64_t num_row_ids_;
+    void InitMaps();
+    unsigned DetermineBufferCols() const;
+
+    // input operator
+    Operator *child_;
+    // list of available relations
+    const std::vector<const Relation *> &relations_;
+    // list of relation IDs being joined
+    const std::vector<unsigned> &relation_ids_;
 
     // buffer, to store returned results
     uint64_t *buffer_;
 
-    // buffer pointers, to write data on
-    uint64_t **buffer_ptrs_;
+    // (relation -> index of column with row IDs for relation)
+    std::map<unsigned, unsigned> row_id_idx_;
+    // (binding -> index of column for binding)
+    std::map<std::pair<unsigned, unsigned>, unsigned> rel_col_idx_;
 
+    unsigned num_cols_;
+    bool with_row_ids_;
 };
 
 // checksum operator
@@ -184,7 +215,8 @@ class CheckSum : public Operator {
     unsigned num_cols() const override { return this->child_->num_cols(); }
     unsigned max_rows() const override { return 1u; }
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
 
   private:
     Operator *child_;
@@ -303,12 +335,12 @@ class HashJoin : public Operator{
     int sumR2;
     int sumS2;
 
-    int32_t last_part;
-    int32_t last_probe;
+    int64_t last_part;
+    int64_t last_probe;
 
     uint32_t global_cnt;
 
-    std::vector<uint32_t> idx_buffer;
+    std::vector<uint64_t> idx_buffer;
     uint64_t idx_offset;
     uint64_t idx_limit;
 
@@ -348,7 +380,9 @@ class HashJoin : public Operator{
 
     int Close () override;
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+ 
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
 
     unsigned num_cols() const override { return cleft+cright; }
     unsigned max_rows() const override { return 1024; }
@@ -396,10 +430,13 @@ class SelectInterpreted : public Operator {
 
     int Close () override;
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
+
+
 
     unsigned num_cols() const override { return this->colNum; }
-    unsigned max_rows() const override { return 1024; }
+    unsigned max_rows() const override { return Operator::ROWS_AT_A_TIME; }
 };
 
 /*
@@ -442,10 +479,13 @@ class SelfJoin : public Operator {
 
     int Close () override;
 
-    Operator* ProjectionPass (std::map<std::pair<unsigned, unsigned>,unsigned> p_bindings);
+    Operator *ProjectionPass(RelColMapping) override;
+    Operator *LateMaterialize(MaterInfo &&info) override;
+
+
 
     unsigned num_cols() const override { return this->colNum; }
-    unsigned max_rows() const override { return 1024; }
+    unsigned max_rows() const override { return Operator::ROWS_AT_A_TIME; }
 };
 
 }  // namespace Granma

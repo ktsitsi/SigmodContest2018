@@ -9,6 +9,9 @@
 #include <algorithm>
 #include <iostream>
 #include <unordered_set>
+#include "include/hash_table.hpp"
+
+#define SAMPLE 1300
 
 using namespace std;
 
@@ -74,42 +77,50 @@ int Relation::RowAt(unsigned index, uint64_t *buf) const {
     return 0;
 }
 
-void Relation::attribute_stats(std::vector<uint64_t>* attr_vector) const {
+// void Relation::attribute_stats(std::vector<uint64_t>* attr_vector) const {
     
 
-    uint64_t *ptr = reinterpret_cast<uint64_t *>(this->map_addr_);
+//     uint64_t *ptr = reinterpret_cast<uint64_t *>(this->map_addr_);
     
-    //Go to the first column
-    std::unordered_set<uint64_t> dist_values_set;
-    attr_vector->push_back(*ptr);
-    ++ptr;
-    attr_vector->push_back(*ptr);
-    ++ptr;
-    uint64_t max;
-    uint64_t min;
+//     //Go to the first column
+//     HashTable<uint64_t> dist_values(1<<12);
+//     attr_vector->push_back(*ptr);
+//     uint64_t sampling_factor = *ptr / SAMPLE;
+//     //std::cout<<"sampling_factor:"<<sampling_factor<<std::endl;
+//     ++ptr;
+//     attr_vector->push_back(*ptr);
+//     ++ptr;
+//     uint64_t max;
+//     uint64_t min;
+//     uint64_t count;
 
-    for(unsigned i=0; i< this->num_cols(); i++){
-        max = 0;
-        min = -1;
-        dist_values_set.clear();
-        for(unsigned j=0; j<this->num_rows(); j++){
-            //Insert in the set the values of the column
-            //By default the set insert doesnt add duplicates
-            dist_values_set.insert(*ptr);
-            if(*ptr < min)
-                min = *ptr;
-            if(*ptr > max)
-                max = *ptr;
-            ++ptr;
-        }
-        //The number of the distinct values is the size of the set
-        attr_vector->push_back(dist_values_set.size());
-        attr_vector->push_back(min);
-        attr_vector->push_back(max);
+//     for(unsigned i=0; i< this->num_cols(); i++){
+//         max = 0;
+//         min = -1;
+//         dist_values.Erase();
+//         count =0;
+//         for(unsigned j=0; j<this->num_rows(); j++){
+//             //Insert in the set the values of the column
+//             //By default the set insert doesnt add duplicates
+//             if(j%sampling_factor == 0){
+//                 //if(dist_values.InsertNoDup(*ptr,(*ptr)&((1<<12)-1),0))
+//                     count++;
+//             }
+//             if(*ptr < min)
+//                 min = *ptr;
+//             if(*ptr > max)
+//                 max = *ptr;
+//             ++ptr;
+//         }
+//         //The number of the distinct values is the size of the set
+//         attr_vector->push_back(count);
+//         attr_vector->push_back(min);
+//         attr_vector->push_back(max);
 
-        //Clear the set to prepare it for the next columN
-    }   
-}
+//         //attr_vector->push_back()
+//         //Clear the set to prepare it for the next columN
+//     }   
+// }
 
 } // namespace Granma
 

@@ -74,11 +74,12 @@ class StatisticJob : public Job
 				//By default the set insert doesnt add duplicates
 				if(j%sampling_factor == 0){
 					dist_values_set.insert(*ptr);
+				
+					if(*ptr < min)
+						min = *ptr;
+					if(*ptr > max)
+						max = *ptr;
 				}
-				if(*ptr < min)
-					min = *ptr;
-				if(*ptr > max)
-					max = *ptr;
 			 	++ptr;
 			}
 			// //The number of the distinct values is the size of the set

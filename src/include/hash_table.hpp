@@ -7,7 +7,7 @@
 #include <cstring>
 #include <vector>
 
-const unsigned int kAllocInit = 100;  // Initial allocator capacity
+const unsigned int kAllocInit = 10000;  // Initial allocator capacity
 
 // Array-based hash table
 // Initialised with number of buckets
@@ -41,7 +41,7 @@ public:
 	
 	size_t get_size() { return size_; }
 	
-	void Insert(const uint64_t key,const uint64_t hash_value, const uint32_t value) 
+	void Insert(const uint64_t key,const uint64_t hash_value, const uint64_t value) 
 	{
 		uint64_t offset = AllocateEntry();
 		allocator_[offset].key = key;
@@ -52,19 +52,27 @@ public:
 	};
 	
 	// Return value associated with key + its hash value else NULL
-	uint64_t SearchKey(const uint64_t key,const uint64_t hash_value, std::vector<uint32_t>& result_buffer) const
+	uint64_t SearchKey(const uint64_t key,const uint64_t hash_value, std::vector<uint64_t>& result_buffer) const
 	{
+		//std::cerr<<"Mpika stin SearchKey"<<std::endl;
 		uint64_t cnt = 0;
-
+		//uint64_t lol_counter = 0;
+		//std::cerr<<"HashValue: "<<hash_value<<"Allocator: "<<allocator_ <<std::endl;
 		uint64_t head = buckets_[hash_value];
+		//std::cerr<<"SYNEXIZEIS????"<<std::endl;
 		uint64_t i = head;
 		while (i != 0) {
 			if (allocator_[i].key == key) {
 				//result_buffer[cnt] = allocator_[i].value;
+				//std::cerr<<"poutsa myrizei sta stena tou gyzi"<<std::endl;
 				result_buffer.push_back(allocator_[i].value);
+				//cnt++;
 				cnt++;
+				//std::cerr<<cnt<<std::endl;
 			}
-			
+			//lol_counter++;
+			//std::cerr<<key<<" | "<<i<<std::endl;
+
 			//if (cnt >= 1024)
 			//	std::cout << "KERATAS" << std::endl;
 
@@ -72,8 +80,11 @@ public:
 
 			i = allocator_[i].next;
 		}
+		//std::cerr<<"vgaineis apeytheias re malaka"<<std::endl;
+
 	
 		//std::cout << cnt << std::endl;
+		//std::cerr<<"Cnt:"<<cnt<< "RBFS: "<<result_buffer.size()<<"lol_counter:"<<lol_counter<<std::endl;
 		return cnt; 
 	}
 	bool InsertNoDup(const uint64_t key,const uint64_t hash_value, const uint32_t value) 
@@ -113,13 +124,17 @@ private:
 		}
 
 		uint64_t key;
-		uint32_t value;
+		uint64_t value;
 		uint32_t next;		
 	};
 	
 	uint64_t AllocateEntry () {
 		if (allocator_size_ >= allocator_capacity_) {
 			allocator_capacity_ *= 2;
+			//std::cerr<<"HashTable inside AllocateEntry"<<std::endl;
+			//if(allocator_size_ > 1000000){
+			//	std::cerr<<"pano apo myrio"<<std::endl;
+			//}
 			allocator_ = (HashEntry*) realloc(allocator_, allocator_capacity_*sizeof(HashEntry));
 		}
 		uint64_t offset = allocator_size_;
